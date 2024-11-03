@@ -1,0 +1,134 @@
+stages:
+  - analyze
+  - build
+  - push
+  - deploy
+
+variables:
+  DOCKER_USERNAME: $DOCKER_USERNAME
+  DOCKER_PASSWORD: $DOCKER_PASSWORD
+  IMAGE_TAG: ${CI_COMMIT_SHORT_SHA}
+  SONAR_URL: $SONAR_URL
+  SONAR_LOGIN: $SONAR_LOGIN
+  SONAR_PASSWORD: $SONAR_PASSWORD
+  PIPELINE_USER: $PIPELINE_USER
+
+
+sonarqube-check:
+  stage: analyze
+  image: 
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  
+    GIT_DEPTH: "0"  
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script: 
+    - bash /opt/sonar-scanner/bin/sonar-scanner
+  allow_failure: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'main'
+
+
+
+
+#test_code:
+# stage: analyze
+# allow_failure: true
+# after_script:
+#   - docker rmi $CI_COMMIT_SHORT_SHA:test
+# script: 
+#   - docker build -t $CI_COMMIT_SHORT_SHA:test -f testdockerfile . 
+  
+
+build_docker_image:
+  stage: build
+  allow_failure: false 
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'dev'
+    - if: $CI_COMMIT_BRANCH == 'main'
+    - if: $CI_COMMIT_BRANCH == 'staging'
+    #- if: $CI_COMMIT_BRANCH == 'devops_branch'
+  script:
+    - echo "Generated image tag is $IMAGE_TAG"
+    - docker build -t istipnx/ipnxnigeria:api-service-$CI_COMMIT_SHORT_SHA .
+
+push_docker_image:
+  stage: push
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'dev'
+    - if: $CI_COMMIT_BRANCH == 'main'
+    - if: $CI_COMMIT_BRANCH == 'staging' 
+    #- if: $CI_COMMIT_BRANCH == 'devops_branch'
+    
+  before_script:
+    - docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+  script:
+    - docker push istipnx/ipnxnigeria:api-service-$CI_COMMIT_SHORT_SHA
+    - docker rmi istipnx/ipnxnigeria:api-service-$CI_COMMIT_SHORT_SHA
+
+
+deploy_to_dev:
+  stage: deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'dev'
+    #- if: $CI_COMMIT_BRANCH == 'devops_branch'
+  image: ubuntu:22.04
+#  when: manual
+#  allow_failure: false 
+  environment: dev
+  before_script:
+    - git config --global user.email "pipeline_user@ipnxnigeria.net"
+    - git config --global user.name "pipeline"
+  script:
+    - git remote set-url origin http://${PIPELINE_TOKEN}@10.50.1.110/devops/devops-iac.git
+    - git clone http://pipeline:${PIPELINE_TOKEN}@10.50.1.110/devops/devops-iac.git
+    - cd devops-iac
+    - sed -i 's/api-service-.*/'api-service-"$IMAGE_TAG"'/g' projects/sales-portal/api-service/dev/deployment.yml
+    - cat projects/sales-portal/api-service/dev/deployment.yml
+    - git add projects/sales-portal/api-service/dev/deployment.yml
+    - git commit -m "Sales portal Api Dev env k8s manifest files"
+    - git push
+deploy_to_staging:
+  stage: deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'staging'
+  image: ubuntu:22.04
+  environment: staging
+  #when: manual
+  allow_failure: false 
+  before_script:
+    - git config --global user.email "pipeline_user@ipnxnigeria.net"
+    - git config --global user.name "pipeline"
+  script:
+    - git remote set-url origin http://${PIPELINE_TOKEN}@10.50.1.110/devops/devops-iac.git
+    - git clone http://pipeline:${PIPELINE_TOKEN}@10.50.1.110/devops/devops-iac.git
+    - cd devops-iac
+    - sed -i 's/api-service-.*/'api-service-"$IMAGE_TAG"'/g' projects/sales-portal/api-service/staging/deployment.yml
+    - cat projects/sales-portal/api-service/staging/deployment.yml
+    - git add projects/sales-portal/api-service/staging/deployment.yml
+    - git commit -m "Sales portal Api Staging env k8s manifest file"
+    - git push
+deploy_to_prod:
+  stage: deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'main'
+  image: ubuntu:22.04
+  environment: production
+  when: manual
+  allow_failure: false 
+  before_script:
+    - git config --global user.email "pipeline_user@ipnxnigeria.net"
+    - git config --global user.name "pipeline"
+  script:
+    - git remote set-url origin http://${PIPELINE_TOKEN}@10.50.1.110/devops/devops-iac.git
+    - git clone http://pipeline:${PIPELINE_TOKEN}@10.50.1.110/devops/devops-iac.git
+    - cd devops-iac
+    - sed -i 's/api-service-.*/'api-service-"$IMAGE_TAG"'/g' projects/sales-portal/api-service/prod/deployment.yml
+    - cat projects/sales-portal/api-service/prod/deployment.yml
+    - git add projects/sales-portal/api-service/prod/deployment.yml
+    - git commit -m "Sales Portal Api service Prod env k8s manifest file"
+    - git push

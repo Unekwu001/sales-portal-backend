@@ -1,0 +1,110 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/SalesPortalAPIProject
+.vs
+# Build folders
+bin/
+obj/
+# Visual Studio user-specific files
+.vs/
+*.user
+*.suo
+# NuGet packages
+packages/
+*.nupkg
+project.lock.json
+# Log files
+*.log
+# Publish folder
+publish/
+# Compiled DLLs
+*.dll
+*.exe
+*.pdb
+*.mdb
+# Generated files
+*.obj
+*.gen.cs
+*.generated.cs
+# npm package directory (if using Node tools in your project)
+node_modules/
+
+# Yarn files
+.yarn/
+yarn.lock
+
+# NuGet package directories
+.nuget/
+# Test result files
+TestResults/
+*.trx
+*.coverage
+
+# Temporary files
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+~$*
+
+# Database files
+*.mdf
+*.ldf
+# Build results
+bin/
+obj/
+
+# User-specific files
+.vs/
+*.user
+*.suo
+
+# Logs
+*.log
+TestResults/
+
+# NuGet
+*.nupkg
+project.lock.json
+packages/
+
+# Publish output
+publish/
+
+# Config files
+appsettings.*.json
+
+# Compiled assembly files
+*.dll
+*.exe
+*.pdb
+*.mdb
+
+# Generated files
+*.obj
+*.gen.cs
+*.generated.cs
+
+# npm/Yarn package manager files
+node_modules/
+.yarn/
+yarn.lock
+
+# IDE settings
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+~$*
+
+# Database
+*.mdf
+*.ldf
